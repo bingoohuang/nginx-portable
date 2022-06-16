@@ -9,20 +9,29 @@ function showAvailableNginxVersion() {
 	rm -rf /tmp/nginx.version
 }
 
+function getLatestNginxVersion() {
+	web=`curl -s https://nginx.org/en/download.html`
+	echo "$web"|grep -o "nginx-[0-9]\+.[0-9]\+.[0-9]\+.tar.gz\"" | head -1 | grep -o "nginx-[0-9]\+.[0-9]\+.[0-9]\+"
+}
+
 function printUsage() {
 	echo "Usage: $0 <version>"
 	echo "  e.g: $0 1.16.1"
+	echo "       $0 latest"
 	echo ""
 	showAvailableNginxVersion
 	echo ""
 }
 
+NGINXV="nginx-$1"
+
 if [ ! "$1" ]; then
 	printUsage
 	exit 1
+elif [ "$1" == "latest" ]; then
+	NGINXV=$(getLatestNginxVersion)
 fi
 
-NGINXV="nginx-$1"
 BASEDIR=$(cd "$(dirname "$0")"; pwd)
 TMPDIR="$BASEDIR/tmp"
 TARGETDIR="$BASEDIR/build/"
@@ -42,10 +51,12 @@ if [ ! -f $NGINXV.tar.gz ]; then
 	echo "Downloading nginx."
 	echo "$URL"
 	if hash curl 2>/dev/null; then
-		(curl "$URL" --silent -o $NGINXV.tar.gz) > /dev/null
+		#(curl "$URL" --silent -o $NGINXV.tar.gz) > /dev/null
+		curl "$URL" --silent -o $NGINXV.tar.gz
 	else
 		echo "curl not found, falling back to wget."
-		(wget "$URL" --quiet -O $NGINXV.tar.gz) > /dev/null
+		#(wget "$URL" --quiet -O $NGINXV.tar.gz) > /dev/null
+		wget "$URL" --quiet -O $NGINXV.tar.gz
 	fi
 else
 	echo "nginx already downloaded."
@@ -76,7 +87,7 @@ cp -r html $TARGETDIR/$NGINXV/
 
 cd $TARGETDIR
 tar czf "$NGINXV".tar.gz $NGINXV
-rm -rf $NGINXV 
+rm -rf $NGINXV
 
 # Remove the temporary directory
 echo "Cleaning up."
